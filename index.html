@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no">
+    <title>听写练习</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>听写练习</h1>
+        </header>
+
+        <main>
+            <div class="tabs">
+                <div class="tab-buttons">
+                    <button class="tab-button active" data-tab="import">导入管理</button>
+                    <button class="tab-button" data-tab="dictation">听写练习</button>
+                    <button class="tab-button" data-tab="history">听写历史</button>
+                </div>
+                
+                <div class="tab-content">
+                    <!-- Tab 1: 导入管理 -->
+                    <div class="tab-pane active" id="import-tab">
+                        <section class="input-section">
+                            <h2>导入生字词</h2>
+                            <div class="input-methods">
+                                <div class="input-method">
+                                    <h3>手动输入</h3>
+                                    <textarea id="manual-input" placeholder="请输入生字词，用逗号或顿号分隔，如：学习、生活，工作"></textarea>
+                                    <button id="add-manual" class="btn btn-primary">
+                                        <span class="btn-icon">+</span>
+                                        <span class="btn-text">添加</span>
+                                    </button>
+                                </div>
+                                
+                                <div class="input-method">
+                                    <h3>文件导入</h3>
+                                    <div class="file-inputs">
+                                        <div class="file-input">
+                                            <label for="txt-file" class="file-label">
+                                                <span class="file-icon">📝</span>
+                                                <span>TXT文件</span>
+                                                <input type="file" id="txt-file" accept=".txt">
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="word-list-section">
+                            <h2>生字词列表</h2>
+                            <div class="word-list-container">
+                                <ul id="word-list"></ul>
+                            </div>
+                            <div class="word-list-controls">
+                                <button id="clear-list" class="btn btn-danger">
+                                    <span class="btn-icon">🗑️</span>
+                                    <span class="btn-text">清空列表</span>
+                                </button>
+                                <span id="word-count" class="badge">共 0 个生字词</span>
+                            </div>
+                        </section>
+                    </div>
+                    
+                    <!-- Tab 2: 听写练习 -->
+                    <div class="tab-pane" id="dictation-tab">
+                        <section class="dictation-section">
+                            <h2>听写设置</h2>
+                            <div class="dictation-settings">
+                                <div class="setting">
+                                    <label for="dictation-mode">听写模式：</label>
+                                    <select id="dictation-mode" class="select-styled">
+                                        <option value="sequential">顺序听写</option>
+                                        <option value="random">随机听写</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="setting">
+                                    <label for="dictation-type">听写方式：</label>
+                                    <select id="dictation-type" class="select-styled">
+                                        <option value="auto">自动听写</option>
+                                        <option value="manual">手动听写</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="setting" id="interval-setting">
+                                    <label for="interval">间隔时间（秒）：</label>
+                                    <div class="range-container">
+                                        <input type="range" id="interval" min="1" max="600" value="5" class="range-styled">
+                                        <span id="interval-value">5</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting">
+                                    <label for="voice-select">语音选择：</label>
+                                    <select id="voice-select" class="select-styled"></select>
+                                </div>
+                                
+                                <div class="setting">
+                                    <label for="speech-rate">语速：</label>
+                                    <div class="range-container">
+                                        <input type="range" id="speech-rate" min="0.5" max="5" step="0.1" value="1" class="range-styled">
+                                        <span id="rate-value">1.0</span>
+                                    </div>
+                                </div>
+
+                                <div class="setting">
+                                    <label for="show-word">显示生字词：</label>
+                                    <label class="switch">
+                                        <input type="checkbox" id="show-word" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="player-section">
+                            <h2>听写播放器</h2>
+                            <div class="player-container">
+                                <div class="player-display">
+                                    <div id="current-word-display">准备开始</div>
+                                    <div class="progress-container">
+                                        <div class="progress-bar">
+                                            <div id="progress-bar-fill"></div>
+                                        </div>
+                                        <div id="progress-display">0 / 0</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="player-controls">
+                                    <button id="start-btn" class="btn btn-primary control-btn">
+                                        <span class="btn-icon">▶️</span>
+                                        <span class="btn-text">开始听写</span>
+                                    </button>
+                                    <button id="pause-btn" class="btn control-btn" disabled>
+                                        <span class="btn-icon">⏸️</span>
+                                        <span class="btn-text">暂停</span>
+                                    </button>
+                                    <button id="repeat-btn" class="btn control-btn" disabled>
+                                        <span class="btn-icon">🔄</span>
+                                        <span class="btn-text">重复</span>
+                                    </button>
+                                    <button id="prev-btn" class="btn control-btn" disabled>
+                                        <span class="btn-icon">⏮️</span>
+                                        <span class="btn-text">上一个</span>
+                                    </button>
+                                    <button id="next-btn" class="btn control-btn" disabled>
+                                        <span class="btn-icon">⏭️</span>
+                                        <span class="btn-text">下一个</span>
+                                    </button>
+                                    <button id="stop-btn" class="btn btn-danger control-btn" disabled>
+                                        <span class="btn-icon">⏹️</span>
+                                        <span class="btn-text">停止</span>
+                                    </button>
+                                </div>
+                                
+                                <div class="word-list-toggle-container">
+                                    <button id="toggle-word-list-btn" class="btn">
+                                        <span class="btn-icon">📋</span>
+                                        <span class="btn-text">显示词语列表</span>
+                                    </button>
+                                </div>
+                                
+                                <div id="current-word-list-container" class="current-word-list-container hidden">
+                                    <h3>当前听写列表</h3>
+                                    <div class="current-word-list-wrapper">
+                                        <div id="current-word-list" class="current-word-list"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                    
+                    <!-- Tab 3: 听写历史 -->
+                    <div class="tab-pane" id="history-tab">
+                        <section class="history-section">
+                            <h2>听写历史记录</h2>
+                            <div class="history-controls">
+                                <label for="items-per-page">每页显示：</label>
+                                <select id="items-per-page" class="select-styled" style="width: 10% !important;">
+                                    <option value="5">5条</option>
+                                    <option value="10">10条</option>
+                                    <option value="15">15条</option>
+                                    <option value="20">20条</option>
+                                    <option value="25">25条</option>
+                                    <option value="30">30条</option>
+                                </select>
+                            </div>
+                            <div id="history-container">
+                                <div class="empty-history">
+                                    <p>暂无听写历史记录</p>
+                                </div>
+                            </div>
+                            <div class="pagination" id="history-pagination">
+                                <!-- Pagination will be added here by JavaScript -->
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>听写练习工具 &copy; 2025</p>
+        </footer>
+    </div>
+
+    <!-- Custom Modal -->
+    <div id="custom-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p id="modal-message"></p>
+            <button id="modal-confirm" class="btn btn-primary">确定</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
